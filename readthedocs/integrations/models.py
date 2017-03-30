@@ -5,7 +5,7 @@ import uuid
 
 from django.db import models, transaction
 from django.utils.translation import ugettext_lazy as _
-from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation
 from django.contrib.contenttypes.models import ContentType
 from django.utils.safestring import mark_safe
 from rest_framework import status
@@ -14,6 +14,7 @@ from pygments import highlight
 from pygments.lexers import JsonLexer
 from pygments.formatters import HtmlFormatter
 
+from readthedocs.projects.models import Project
 from .utils import normalize_request_payload
 
 
@@ -139,3 +140,104 @@ class HttpExchange(models.Model):
     @property
     def formatted_response_body(self):
         return self.formatted_json('response_body')
+
+
+class IntegrationQuerySet(models.QuerySet):
+
+    """Return a subclass of Integration, based on the integration type
+
+    .. note::
+        This doesn't affect queries currently, only fetching of an object
+    """
+
+    def get(self, *args, **kwargs):
+        """Replace model instance on Integration subclasses
+
+        This is based on the ``integration_type`` field, and is used to provide
+        specific functionality to and integration via a proxy subclass of the
+        Integration model.
+        """
+        old = super(IntegrationQuerySet, self).get(*args, **kwargs)
+        # Build a mapping of integration_type -> class dynamically
+        class_map = dict(
+            (cls.integration_type_id, cls)
+            for cls in self.model.__subclasses__()
+            if hasattr(cls, 'integration_type_id')
+        )
+        cls_replace = class_map.get(old.integration_type)
+        if cls_replace is None:
+            return old
+        new = cls_replace()
+        for k, v in old.__dict__.items():
+            new.__dict__[k] = v
+        return new
+
+
+class Integration(models.Model):
+
+    """Inbound webhook integration for projects"""
+
+    GITHUB_WEBHOOK = 'github_webhook'
+    BITBUCKET_WEBHOOK = 'bitbucket_webhook'
+    GITLAB_WEBHOOK = 'gitlab_webhook'
+    API_WEBHOOK = 'api_webhook'
+
+    INTEGRATIONS = (
+        (GITHUB_WEBHOOK, _('GitHub incoming webhook')),
+        (BITBUCKET_WEBHOOK, _('Bitbucket incoming webhook')),
+        (GITLAB_WEBHOOK, _('GitLab incoming webhook')),
+        (API_WEBHOOK, _('Generic API incoming webhook')),
+    )
+
+    project = models.ForeignKey(Project, related_name='integrations')
+    integration_type = models.CharField(
+        _('Type'),
+        max_length=32,
+        choices=INTEGRATIONS
+    )
+    provider_data = JSONField(_('Provider data'))
+    exchanges = GenericRelation(
+        'HttpExchange',
+        related_query_name='integrations'
+    )
+
+    objects = IntegrationQuerySet.as_manager()
+
+    # Integration attributes
+    has_sync = False
+
+    def __unicode__(self):
+        return (_('{0} for {1}')
+                .format(self.get_integration_type_display(), self.project.name))
+
+
+class GitHubWebhook(Integration):
+
+    integration_type_id = Integration.GITHUB_WEBHOOK
+    has_sync = True
+
+    class Meta:
+        proxy = True
+
+    @property
+    def can_sync(self):
+        try:
+            return all((k in self.provider_data) for k in ['id', 'url'])
+        except (ValueError, TypeError):
+            return False
+
+
+class BitbucketWebhook(Integration):
+
+    integration_type_id = Integration.BITBUCKET_WEBHOOK
+    has_sync = True
+
+    class Meta:
+        proxy = True
+
+    @property
+    def can_sync(self):
+        try:
+            return all((k in self.provider_data) for k in ['id', 'url'])
+        except (ValueError, TypeError):
+            return False
