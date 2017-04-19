@@ -120,3 +120,26 @@ class HttpExchangeTests(TestCase):
             ).count(),
             10
         )
+
+    def test_request_headers_are_removed(self):
+        client = APIClient()
+        client.login(username='super', password='test')
+        project = fixture.get(Project, main_language_project=None)
+        integration = fixture.get(Integration, project=project,
+                                  integration_type=Integration.GITHUB_WEBHOOK,
+                                  provider_data='')
+        resp = client.post(
+            '/api/v2/webhook/github/{0}/'.format(project.slug),
+            {'ref': 'exchange_json'},
+            format='json',
+            HTTP_X_FORWARDED_FOR='1.2.3.4',
+            HTTP_X_REAL_IP='5.6.7.8',
+            HTTP_X_FOO='bar',
+        )
+        exchange = HttpExchange.objects.get(integrations=integration)
+        self.assertEqual(
+            exchange.request_headers,
+            {u'Content-Type': u'application/json; charset=None',
+             u'Cookie': u'',
+             u'X-Foo': u'bar'}
+        )

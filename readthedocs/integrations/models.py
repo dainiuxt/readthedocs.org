@@ -2,6 +2,7 @@
 
 import json
 import uuid
+import re
 
 from django.db import models, transaction
 from django.utils.translation import ugettext_lazy as _
@@ -21,6 +22,12 @@ from .utils import normalize_request_payload
 class HttpExchangeManager(models.Manager):
 
     """HTTP exchange manager methods"""
+
+    # Filter rules for request headers to remove from the output
+    REQ_FILTER_RULES = [
+        re.compile('^X-Forwarded-.*$', re.I),
+        re.compile('^X-Real-Ip$', re.I),
+    ]
 
     @transaction.atomic
     def from_exchange(self, req, resp, related_object, payload=None):
@@ -55,6 +62,11 @@ class HttpExchangeManager(models.Manager):
             if key.startswith('HTTP_')
         )
         request_headers['Content-Type'] = req.content_type
+        # Remove unwanted headers
+        for filter_rule in self.REQ_FILTER_RULES:
+            for key in request_headers.keys():
+                if filter_rule.match(key):
+                    del request_headers[key]
 
         response_payload = resp.data if hasattr(resp, 'data') else resp.content
         try:
