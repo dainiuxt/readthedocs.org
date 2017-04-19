@@ -76,13 +76,16 @@ class HttpExchangeManager(models.Manager):
         return obj
 
     def delete_limit(self, related_object, limit=10):
-        queryset = self.filter(
-            content_type=ContentType.objects.get(
-                app_label=related_object._meta.app_label,
-                model=related_object._meta.model_name,
-            ),
-            object_id=related_object.pk
-        )
+        if isinstance(related_object, Integration):
+            queryset = self.filter(integrations=related_object)
+        else:
+            queryset = self.filter(
+                content_type=ContentType.objects.get(
+                    app_label=related_object._meta.app_label,
+                    model=related_object._meta.model_name,
+                ),
+                object_id=related_object.pk
+            )
         for exchange in queryset[limit:]:
             exchange.delete()
 
