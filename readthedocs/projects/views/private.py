@@ -32,7 +32,8 @@ from readthedocs.projects.forms import (
     ProjectBasicsForm, ProjectExtraForm,
     ProjectAdvancedForm, UpdateProjectForm, SubprojectForm,
     build_versions_form, UserForm, EmailHookForm, TranslationForm,
-    RedirectForm, WebHookForm, DomainForm, ProjectAdvertisingForm)
+    RedirectForm, WebHookForm, DomainForm, IntegrationForm,
+    ProjectAdvertisingForm)
 from readthedocs.projects.models import Project, EmailHook, WebHook, Domain
 from readthedocs.projects.views.base import ProjectAdminMixin, ProjectSpamMixin
 from readthedocs.projects import constants, tasks
@@ -671,6 +672,13 @@ class IntegrationMixin(ProjectAdminMixin, PrivateViewMixin):
 
     model = Integration
     integration_url_field = 'integration_pk'
+    form_class = IntegrationForm
+
+    def get_queryset(self):
+        return self.get_integration_queryset()
+
+    def get_object(self):
+        return self.get_integration()
 
     def get_integration_queryset(self):
         self.project = self.get_project()
@@ -696,12 +704,11 @@ class IntegrationMixin(ProjectAdminMixin, PrivateViewMixin):
 
 
 class IntegrationList(IntegrationMixin, ListView):
+    pass
 
-    def get_queryset(self):
-        return self.get_integration_queryset()
 
-    def get_object(self):
-        return self.get_integration()
+class IntegrationCreate(IntegrationMixin, CreateView):
+    pass
 
 
 class IntegrationDetail(IntegrationMixin, DetailView):
@@ -714,12 +721,6 @@ class IntegrationDetail(IntegrationMixin, DetailView):
         Integration.API_WEBHOOK: 'webhook',
     }
 
-    def get_queryset(self):
-        return self.get_integration_queryset()
-
-    def get_object(self):
-        return self.get_integration()
-
     def get_template_names(self):
         if self.template_name:
             return self.template_name
@@ -727,6 +728,10 @@ class IntegrationDetail(IntegrationMixin, DetailView):
         suffix = self.SUFFIX_MAP.get(integration_type, integration_type)
         return ('projects/integration_{0}{1}.html'
                 .format(suffix, self.template_name_suffix))
+
+
+class IntegrationDelete(IntegrationMixin, DeleteView):
+    pass
 
 
 class IntegrationExchangeDetail(IntegrationMixin, DetailView):
@@ -739,6 +744,9 @@ class IntegrationExchangeDetail(IntegrationMixin, DetailView):
         return self.model.objects.filter(
             integrations=self.get_integration()
         )
+
+    def get_object(self):
+        return DetailView.get_object(self)
 
 
 class IntegrationWebhookSync(IntegrationMixin, GenericView):

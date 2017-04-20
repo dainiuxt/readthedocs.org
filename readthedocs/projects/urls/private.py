@@ -8,8 +8,8 @@ from readthedocs.projects.views.private import (
     ProjectDashboard, ImportView,
     ProjectUpdate, ProjectAdvancedUpdate,
     DomainList, DomainCreate, DomainDelete, DomainUpdate,
-    IntegrationList, IntegrationDetail, IntegrationExchangeDetail,
-    IntegrationWebhookSync, ProjectAdvertisingUpdate)
+    IntegrationList, IntegrationCreate, IntegrationDetail, IntegrationDelete,
+    IntegrationExchangeDetail, IntegrationWebhookSync, ProjectAdvertisingUpdate)
 from readthedocs.projects.backends.views import ImportWizardView, ImportDemoView
 
 
@@ -136,6 +136,10 @@ integration_urls = [
     url(r'^(?P<project_slug>{project_slug})/integrations/sync/$'.format(**pattern_opts),
         IntegrationWebhookSync.as_view(),
         name='projects_integrations_webhooks_sync'),
+    url((r'^(?P<project_slug>{project_slug})/integrations/create/$'
+         .format(**pattern_opts)),
+        IntegrationCreate.as_view(),
+        name='projects_integrations_create'),
     url((r'^(?P<project_slug>{project_slug})/'
          r'integrations/(?P<integration_pk>{integer_pk})/$'
          .format(**pattern_opts)),
@@ -152,6 +156,11 @@ integration_urls = [
          .format(**pattern_opts)),
         IntegrationWebhookSync.as_view(),
         name='projects_integrations_webhooks_sync'),
+    url((r'^(?P<project_slug>{project_slug})/'
+         r'integrations/(?P<integration_pk>{integer_pk})/delete/$'
+         .format(**pattern_opts)),
+        IntegrationDelete.as_view(),
+        name='projects_integrations_delete'),
 ]
 
 urlpatterns += integration_urls

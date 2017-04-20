@@ -197,16 +197,18 @@ class Integration(models.Model):
     GITLAB_WEBHOOK = 'gitlab_webhook'
     API_WEBHOOK = 'api_webhook'
 
-    INTEGRATIONS = (
+    WEBHOOK_INTEGRATIONS = (
         (GITHUB_WEBHOOK, _('GitHub incoming webhook')),
         (BITBUCKET_WEBHOOK, _('Bitbucket incoming webhook')),
         (GITLAB_WEBHOOK, _('GitLab incoming webhook')),
         (API_WEBHOOK, _('Generic API incoming webhook')),
     )
 
+    INTEGRATIONS = WEBHOOK_INTEGRATIONS
+
     project = models.ForeignKey(Project, related_name='integrations')
     integration_type = models.CharField(
-        _('Type'),
+        _('Integration type'),
         max_length=32,
         choices=INTEGRATIONS
     )
