@@ -141,7 +141,9 @@ class HttpExchange(models.Model):
         """Try to return pretty printed and Pygment highlighted code"""
         value = getattr(self, field) or ''
         try:
-            json_value = json.dumps(json.loads(value), sort_keys=True, indent=2)
+            if not isinstance(value, dict):
+                value = json.loads(value)
+            json_value = json.dumps(value, sort_keys=True, indent=2)
             formatter = HtmlFormatter()
             html = highlight(json_value, JsonLexer(), formatter)
             return mark_safe(html)
