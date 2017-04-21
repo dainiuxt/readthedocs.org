@@ -731,7 +731,9 @@ class IntegrationDetail(IntegrationMixin, DetailView):
 
 
 class IntegrationDelete(IntegrationMixin, DeleteView):
-    pass
+
+    def get(self, request, *args, **kwargs):
+        return self.http_method_not_allowed(request, *args, **kwargs)
 
 
 class IntegrationExchangeDetail(IntegrationMixin, DetailView):

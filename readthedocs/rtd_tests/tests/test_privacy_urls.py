@@ -226,6 +226,7 @@ class PrivateProjectAdminAccessTest(PrivateProjectMixin, TestCase):
         '/dashboard/pip/redirects/delete/': {'status_code': 405},
         '/dashboard/pip/integrations/sync/': {'status_code': 405},
         '/dashboard/pip/integrations/1/sync/': {'status_code': 405},
+        '/dashboard/pip/integrations/1/delete/': {'status_code': 405},
     }
 
     def login(self):
@@ -253,6 +254,7 @@ class PrivateProjectUserAccessTest(PrivateProjectMixin, TestCase):
         '/dashboard/pip/redirects/delete/': {'status_code': 405},
         '/dashboard/pip/integrations/sync/': {'status_code': 405},
         '/dashboard/pip/integrations/1/sync/': {'status_code': 405},
+        '/dashboard/pip/integrations/1/delete/': {'status_code': 405},
     }
 
     # Filtered out by queryset on projects that we don't own.
